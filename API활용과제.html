@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>장애인 맞춤형 지원사 사업 제공기관 현황</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      select {
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>장애인 맞춤형 지원사 사업 제공기관 현황</h1>
+
+    <label for="region">지역 선택:</label>
+    <select id="region">
+      <option value="">전체</option>
+    </select>
+
+    <table id="provider-table">
+      <thead>
+        <tr>
+          <th>기관명</th>
+          <th>시군명</th>
+          <th>전화번호</th>
+          <th>지번주소</th>
+          <th>도로명주소</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      const proxy = "https://corsproxy.io/?";
+      const apiKey = "ee251d1a7b21438c8a66712f7ac4dc37";
+      const apiUrl = `https://openapi.gg.go.kr/Ggdspsncustmzbizinst?KEY=${apiKey}&Type=json&pIndex=1&pSize=1000`;
+
+      let data = [];
+
+      fetch(proxy + encodeURIComponent(apiUrl))
+        .then((res) => res.json())
+        .then((json) => {
+          const service = json.Ggdspsncustmzbizinst;
+          const dataRows = service?.[1]?.row;
+
+          if (!dataRows || dataRows.length === 0) {
+            alert("데이터가 없거나 응답이 비어 있습니다.");
+            return;
+          }
+
+          data = dataRows;
+          populateRegions(data);
+          renderTable(data);
+        })
+        .catch((err) => {
+          console.error("OpenAPI 호출 오류:", err);
+          alert("OpenAPI 데이터를 불러오는 데 실패했습니다.");
+        });
+
+      function populateRegions(data) {
+        const select = document.getElementById("region");
+        const regions = [...new Set(data.map((item) => item.SIGUN_NM))]
+          .filter(Boolean)
+          .sort();
+        regions.forEach((region) => {
+          const option = document.createElement("option");
+          option.value = region;
+          option.textContent = region;
+          select.appendChild(option);
+        });
+      }
+
+      function renderTable(data) {
+        const tbody = document.querySelector("#provider-table tbody");
+        tbody.innerHTML = "";
+        data.forEach((item) => {
+          const row = `
+            <tr>
+              <td>${item.INST_NM || ""}</td>
+              <td>${item.SIGUN_NM || ""}</td>
+              <td>${item.TELNO || ""}</td>
+              <td>${item.REFINE_LOTNO_ADDR || ""}</td>
+              <td>${item.REFINE_ROADNM_ADDR || ""}</td>
+            </tr>`;
+          tbody.innerHTML += row;
+        });
+      }
+
+      document.getElementById("region").addEventListener("change", (e) => {
+        const selected = e.target.value;
+        const filtered = selected
+          ? data.filter((d) => d.SIGUN_NM === selected)
+          : data;
+        renderTable(filtered);
+      });
+    </script>
+  </body>
+</html>
